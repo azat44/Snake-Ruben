@@ -1,31 +1,32 @@
-name: build
+name: Build Snake ESP32
 
-# Compile le sketch a chaque push et pull request.
 on:
   push:
+    branches: [main]
   pull_request:
-  workflow_dispatch:   # bouton "Run workflow" manuel
+    branches: [main]
 
 jobs:
-  compile:
-    name: Compiler le sketch (ESP32-S3)
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Recuperer le code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Compiler pour ESP32-S3
-        uses: arduino/compile-sketches@v1
-        with:
-          fqbn: "esp32:esp32:esp32s3"
-          platforms: |
-            - name: esp32:esp32
-              source-url: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
-          libraries: |
-            - name: Adafruit GFX Library
-            - name: Adafruit SSD1306
-            - name: Adafruit BusIO
-            - name: WebSockets
-          sketch-paths: |
-            - ./snake_esp32_usb
-          enable-warnings-report: true
+      - uses: arduino/setup-arduino-cli@v2
+
+      - name: Install ESP32 core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
+      - name: Install libraries
+        run: |
+          arduino-cli lib install "Adafruit GFX Library"
+          arduino-cli lib install "Adafruit SSD1306"
+          arduino-cli lib install "WebSockets"
+
+      - name: Compile sketch
+        run: |
+          arduino-cli compile --fqbn esp32:esp32:esp32s3 snake_esp32_usb/snake_esp32_usb.ino
